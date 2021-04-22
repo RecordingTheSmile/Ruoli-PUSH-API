@@ -20,7 +20,7 @@ api = '你的网址+/api/qmsg'
   新手建议如下：
   ```shell
   cd 程序路径
-  nohup ./rlpush >rlsmtplog.out & 
+  nohup ./rlpush >rlpushlog.out & 
   ```
   有经验的用户建议使用supervisor或其他进程守护工具。
 # 注意事项
