@@ -3,18 +3,21 @@
 # 使用方法
 1.下载最新Release中的对应版本，解压  
 2.根据文件中的注释修改config.toml  
-3.运行rlpush主程序  
-4.修改若离脚本中action文件夹下的rlMessage.py，将其中的
-```python
-api = 'http://mail.ruoli.cc/api/sendMail'
+3.运行RlPush主程序  
+4.下载**最新版本的若离脚本**修改若离脚本中config.yml，将其中的
+```yaml
+# 邮箱API的地址
+emailApiUrl: http://mail.ruoli.cc/api/sendMail
 ```
 改为
-```python
-api = '你的网址+/api/mail'
+```yaml
+# 邮箱API的地址
+emailApiUrl: 你的网址/api/sendMail
 ```
 若要使用Qmsg推送，请填写好Qmsg API key之后将上述代码改为
-```python
-api = '你的网址+/api/qmsg'
+```yaml
+# 邮箱API的地址
+emailApiUrl: 你的网址/api/sendQQ
 ```  
 5.Linux用户建议：  
   新手建议如下：
