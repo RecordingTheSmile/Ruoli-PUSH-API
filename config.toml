@@ -1,0 +1,22 @@
+[smtp]
+address=""	#smtp发送URL
+port=""		#smtp发送端口
+username=""	#smtp用户名，一般为邮箱
+password=""	#smtp密码
+nickname=""	#smtp发送昵称，有邮箱强制要求与邮箱号一致
+[qmsg]
+key=""		#qmsg的api key，请自行申请，不填即不开启Qmsg推送
+[web]
+port=""		#HTTP监听端口，不填即为80
+tlsport=""	#HTTPS监听端口，不填即为443
+			#以下两项分别为HTTPS证书文件与密钥文件位置，可以填相对和绝对位置。不填即不开启HTTPS
+			#需注意当开启HTTPS后仅监听HTTPS端口，不监听HTTP端口
+tlscert=""
+tlskey=""
+[mysql]
+			#若不使用MySQL，以下配置请勿填写
+address=""	#mysql连接地址，不填即127.0.0.1
+port=""		#mysql连接端口，不填即3306
+usrname=""	#mysql连接用户名
+passwd=""	#mysql连接密码
+dbname=""	#mysql数据库名称
