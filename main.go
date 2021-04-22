@@ -16,13 +16,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/spf13/viper"
+	"gopkg.in/gomail.v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"io"
 	"log"
 	"net/http"
-	"net/smtp"
 	"strings"
 	"time"
 )
@@ -53,16 +53,21 @@ func main() {
 		log.Fatalln("错误：无法读取配置文件！错误信息：", err)
 	}
 	//将配置文件中的配置项读入
-	viper.SetDefault("smtp.port", "25")
+	viper.SetDefault("smtp.port", 25)
 	smtpaddr := viper.GetString("smtp.address")
-	smtpport := viper.GetString("smtp.port")
+	smtpport := viper.GetInt("smtp.port")
 	smtpusrname := viper.GetString("smtp.username")
 	smtppasswd := viper.GetString("smtp.password")
 	smtpnickname := viper.GetString("smtp.nickname")
 	if smtpaddr == "" || smtpusrname == "" || smtppasswd == "" || smtpnickname == "" {
 		log.Fatalln("错误：SMTP配置不完整！")
 	}
-	auth := smtp.PlainAuth("", smtpusrname, smtppasswd, smtpaddr)
+	d := gomail.NewDialer(smtpaddr, smtpport, smtpusrname, smtppasswd)
+	dclose, err := d.Dial()
+	if err != nil {
+		log.Fatalln("错误：SMTP无法连接！错误信息：", err)
+	}
+	dclose.Close()
 	qmsgkey := viper.GetString("qmsg.key")
 	viper.SetDefault("web.port", "80")
 	viper.SetDefault("web.tlsport", "443")
@@ -116,7 +121,13 @@ func main() {
 	app.Use(limiter.New(limiter.Config{
 		Max: 60,
 		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IPs()[0]
+			if c.IP() != "127.0.0.1" {
+				return c.IP()
+			} else if c.IPs() != nil {
+				return c.IPs()[0]
+			} else {
+				return c.IP()
+			}
 		},
 		Expiration: 1 * time.Minute,
 		LimitReached: func(c *fiber.Ctx) error {
@@ -141,11 +152,12 @@ func main() {
 					"msg":     "未传入必要参数！",
 				})
 			}
-			msg := []byte(fmt.Sprintf("To:%s\r\n"+
-				"Subject:%s\r\n"+
-				"\r\n"+
-				"%s\r\n", p.To, p.Title, p.Content))
-			if err := smtp.SendMail(smtpaddr+":"+smtpport, auth, smtpnickname, []string{p.To}, msg); err != nil {
+			m := gomail.NewMessage()
+			m.SetHeader("From", smtpnickname)
+			m.SetHeader("To", p.To)
+			m.SetHeader("Subject", p.Title)
+			m.SetBody("text/plain", p.Content)
+			if err := d.DialAndSend(m); err != nil {
 				log.Println("发送邮件错误：", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 					"success": false,
@@ -177,8 +189,8 @@ func main() {
 				})
 			}
 			url := qmsgurl + qmsgkey
-			msg := "标题：" + p.Title + "\n" + p.Content
-			resp, err := http.Post(url, "text/plain", strings.NewReader(msg))
+			msg := "标题：" + p.Title + "\n内容：" + p.Content
+			resp, err := http.Post(url, "application/x-www-form-urlencoded", strings.NewReader("msg="+msg+"&qq="+p.To))
 			if err != nil {
 				return err
 			}
@@ -213,33 +225,6 @@ func main() {
 	app.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).Type("html", "utf-8").Send([]byte(`<h1 alien="center">404 Not Found</h1>`))
 	})
-	//显示logo
-	fmt.Println(`
-
-          _____                    _____            _____                    _____                _____                    _____          
-         /\    \                  /\    \          /\    \                  /\    \              /\    \                  /\    \         
-        /::\    \                /::\____\        /::\    \                /::\____\            /::\    \                /::\    \        
-       /::::\    \              /:::/    /       /::::\    \              /::::|   |            \:::\    \              /::::\    \       
-      /::::::\    \            /:::/    /       /::::::\    \            /:::::|   |             \:::\    \            /::::::\    \      
-     /:::/\:::\    \          /:::/    /       /:::/\:::\    \          /::::::|   |              \:::\    \          /:::/\:::\    \     
-    /:::/__\:::\    \        /:::/    /       /:::/__\:::\    \        /:::/|::|   |               \:::\    \        /:::/__\:::\    \    
-   /::::\   \:::\    \      /:::/    /        \:::\   \:::\    \      /:::/ |::|   |               /::::\    \      /::::\   \:::\    \   
-  /::::::\   \:::\    \    /:::/    /       ___\:::\   \:::\    \    /:::/  |::|___|______        /::::::\    \    /::::::\   \:::\    \  
- /:::/\:::\   \:::\____\  /:::/    /       /\   \:::\   \:::\    \  /:::/   |::::::::\    \      /:::/\:::\    \  /:::/\:::\   \:::\____\ 
-/:::/  \:::\   \:::|    |/:::/____/       /::\   \:::\   \:::\____\/:::/    |:::::::::\____\    /:::/  \:::\____\/:::/  \:::\   \:::|    |
-\::/   |::::\  /:::|____|\:::\    \       \:::\   \:::\   \::/    /\::/    / ~~~~~/:::/    /   /:::/    \::/    /\::/    \:::\  /:::|____|
- \/____|:::::\/:::/    /  \:::\    \       \:::\   \:::\   \/____/  \/____/      /:::/    /   /:::/    / \/____/  \/_____/\:::\/:::/    / 
-       |:::::::::/    /    \:::\    \       \:::\   \:::\    \                  /:::/    /   /:::/    /                    \::::::/    /  
-       |::|\::::/    /      \:::\    \       \:::\   \:::\____\                /:::/    /   /:::/    /                      \::::/    /   
-       |::| \::/____/        \:::\    \       \:::\  /:::/    /               /:::/    /    \::/    /                        \::/____/    
-       |::|  ~|               \:::\    \       \:::\/:::/    /               /:::/    /      \/____/                          ~~          
-       |::|   |                \:::\    \       \::::::/    /               /:::/    /                                                    
-       \::|   |                 \:::\____\       \::::/    /               /:::/    /                                                     
-        \:|   |                  \::/    /        \::/    /                \::/    /                                                      
-         \|___|                   \/____/          \/____/                  \/____/                                                       
-
-
-`)
 	log.Println("开始监听端口")
 	// 初始化监听服务
 	if webtlscert == "" || webtlskey == "" {
@@ -254,6 +239,7 @@ func main() {
 		}
 	}
 }
+//数据库记录线程
 func logInDatabase(To string, Content string, Title string) {
 	if Db == nil {
 		return
