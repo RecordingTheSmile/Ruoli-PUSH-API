@@ -1,7 +1,7 @@
 /*
 作者：RecordingTheSmile
 项目名称：若离SMTP发送API
-项目版本：1.2
+项目版本：1.3
 环境要求：内核版本不得过低（若提示内核版本过低则请安装新版内核或升级系统）
 其他要求：使用数据库时请安装MySQL数据库，其他种类数据库请自行修改；
 		若使用Qmsg推送请务必注册Qmsg API Key之后填写进配置文件;
@@ -98,7 +98,7 @@ func main() {
 	}
 	//初始化fiber
 	app := fiber.New(fiber.Config{
-		ServerHeader:         "Ruoli-SMTP",
+		ServerHeader:         "Ruoli-PUSH",
 		BodyLimit:            5 * 1024 * 1024,
 		ReadTimeout:          60 * time.Second,
 		WriteTimeout:         60 * time.Second,
@@ -139,8 +139,8 @@ func main() {
 	//定义api路由组
 	api := app.Group("/api")
 	{
-		//smtp推送逻辑，访问/api/mail即执行
-		api.Post("/mail", func(c *fiber.Ctx) error {
+		//smtp推送逻辑，访问/api/sendMail即执行
+		api.Post("/sendMail", func(c *fiber.Ctx) error {
 			p := new(body)
 			if err := c.BodyParser(p); err != nil {
 				p.To = c.Query("to")
@@ -171,8 +171,8 @@ func main() {
 				"msg":     "邮件发送成功！",
 			})
 		})
-		//Qmsg推送逻辑，访问/api/qmsg即执行
-		api.Post("/qmsg", func(c *fiber.Ctx) error {
+		//Qmsg推送逻辑，访问/api/sendQQ即执行
+		api.Post("/sendQQ", func(c *fiber.Ctx) error {
 			if qmsgkey == "" {
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 					"success": false,
