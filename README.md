@@ -15,7 +15,14 @@ api = '你的网址+/api/mail'
 若要使用Qmsg推送，请填写好Qmsg API key之后将上述代码改为
 ```python
 api = '你的网址+/api/qmsg'
-```
+```  
+5.Linux用户建议：  
+  新手建议如下：
+  ```shell
+  cd 程序路径
+  nohup ./rlsmtp >rlsmtplog.out & 
+  ```
+  有经验的用户建议使用supervisor或其他进程守护工具。
 # 注意事项
 1.Release中仅编译了Windows版本和Linux版本，支持的平台均为X86_64，若有其他系统和平台需求请自行下载源码编译  
 2.本项目与若离本人无关，仅为个人娱乐项目
