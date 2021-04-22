@@ -1,7 +1,7 @@
 /*
 作者：RecordingTheSmile
 项目名称：若离SMTP发送API
-项目版本：1.1
+项目版本：1.2
 环境要求：内核版本不得过低（若提示内核版本过低则请安装新版内核或升级系统）
 其他要求：使用数据库时请安装MySQL数据库，其他种类数据库请自行修改；
 		若使用Qmsg推送请务必注册Qmsg API Key之后填写进配置文件;
@@ -86,7 +86,7 @@ func main() {
 	if mysqlpasswd == "" || mysqlusrname == "" || mysqldbname == "" {
 		log.Println("提示：MySQL信息填写不完整，将不记录推送信息！")
 	} else {
-		db, err := gorm.Open(mysql.Open(fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", mysqlusrname, mysqlpasswd, mysqladdr, mysqlport, mysqldbname)), &gorm.Config{NamingStrategy: schema.NamingStrategy{SingularTable: true}})
+		db, err := gorm.Open(mysql.Open(fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", mysqlusrname, mysqlpasswd, mysqladdr, mysqlport, mysqldbname)), &gorm.Config{NamingStrategy: schema.NamingStrategy{SingularTable: true}, PrepareStmt: true})
 		if err != nil {
 			log.Fatalln("错误：MySQL连接失败！错误信息：", err)
 		}
@@ -98,7 +98,6 @@ func main() {
 	}
 	//初始化fiber
 	app := fiber.New(fiber.Config{
-		Prefork:              true,
 		ServerHeader:         "Ruoli-SMTP",
 		BodyLimit:            5 * 1024 * 1024,
 		ReadTimeout:          60 * time.Second,
@@ -144,7 +143,9 @@ func main() {
 		api.Post("/mail", func(c *fiber.Ctx) error {
 			p := new(body)
 			if err := c.BodyParser(p); err != nil {
-				return err
+				p.To = c.Query("to")
+				p.Content = c.Query("content")
+				p.Title = c.Query("title")
 			}
 			if p.To == "" || p.Content == "" || p.Title == "" {
 				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -180,7 +181,9 @@ func main() {
 			}
 			p := new(body)
 			if err := c.BodyParser(p); err != nil {
-				return err
+				p.To = c.Query("to")
+				p.Content = c.Query("content")
+				p.Title = c.Query("title")
 			}
 			if p.To == "" || p.Content == "" || p.Title == "" {
 				return c.Status(http.StatusBadRequest).JSON(fiber.Map{
@@ -239,6 +242,7 @@ func main() {
 		}
 	}
 }
+
 //数据库记录线程
 func logInDatabase(To string, Content string, Title string) {
 	if Db == nil {
