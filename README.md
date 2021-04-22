@@ -3,7 +3,7 @@
 # 使用方法
 1.下载最新Release中的对应版本，解压  
 2.根据文件中的注释修改config.toml  
-3.运行rlsmtp主程序  
+3.运行rlpush主程序  
 4.修改若离脚本中action文件夹下的rlMessage.py，将其中的
 ```python
 api = 'http://mail.ruoli.cc/api/sendMail'
