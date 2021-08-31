@@ -154,7 +154,7 @@ func main() {
 				})
 			}
 			m := gomail.NewMessage()
-			m.SetHeader("From", smtpnickname)
+			m.SetAddressHeader("From", smtpusrname, smtpnickname)
 			m.SetHeader("To", p.To)
 			m.SetHeader("Subject", p.Title)
 			m.SetBody("text/plain", p.Content)
